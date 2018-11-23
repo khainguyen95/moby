@@ -51,17 +51,17 @@ type ProtoDriver interface {
 	// CreateReadWrite creates a new, empty filesystem layer that is ready
 	// to be used as the storage for a container. Additional options can
 	// be passed in opts. parent may be "" and opts may be nil.
-	CreateReadWrite(id, parent string, opts *CreateOpts) error
+	CreateReadWrite(Path, id, parent string, opts *CreateOpts) error
 	// Create creates a new, empty, filesystem layer with the
 	// specified id and parent and options passed in opts. Parent
 	// may be "" and opts may be nil.
-	Create(id, parent string, opts *CreateOpts) error
+	Create(Path, id, parent string, opts *CreateOpts) error
 	// Remove attempts to remove the filesystem layer with this id.
 	Remove(id string) error
 	// Get returns the mountpoint for the layered filesystem referred
 	// to by this id. You can optionally specify a mountLabel or "".
 	// Returns the absolute path to the mounted layered filesystem.
-	Get(id, mountLabel string) (fs containerfs.ContainerFS, err error)
+	Get(Path, id, mountLabel string) (fs containerfs.ContainerFS, err error)
 	// Put releases the system resources for the specified id,
 	// e.g, unmounting layered filesystem.
 	Put(id string) error

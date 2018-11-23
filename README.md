@@ -36,6 +36,49 @@ The releases are supported by the maintainers, community and users, on a best ef
 
 -----
 
+Docker hacking
+=====
+Build project:
+
+Use command:
+```bazaar
+$ make BIND_DIR=. shell 
+```
+Test after the build finished:
+- Step 1: install docker machine.
+  - If you are running on **macOS**:
+    ```bazaar
+    $ base=https://github.com/docker/machine/releases/download/v0.16.0 &&
+      curl -L $base/docker-machine-$(uname -s)-$(uname -m) >/usr/local/bin/docker-machine &&
+      chmod +x /usr/local/bin/docker-machine
+    ```
+  - If you are running on **Linux**:
+   
+    ```bazaar
+    $ base=https://github.com/docker/machine/releases/download/v0.16.0 &&
+      curl -L $base/docker-machine-$(uname -s)-$(uname -m) >/tmp/docker-machine &&
+      sudo install /tmp/docker-machine /usr/local/bin/docker-machine
+    ```
+  - If you are running with **Windows** with Git BASH:
+    ```bazaar
+    $ base=https://github.com/docker/machine/releases/download/v0.16.0 &&
+      mkdir -p "$HOME/bin" &&
+      curl -L $base/docker-machine-Windows-x86_64.exe > "$HOME/bin/docker-machine.exe" &&
+      chmod +x "$HOME/bin/docker-machine.exe"
+    ```
+- Step 2: Create new docker machine to build project.
+```bazaar
+$ docker-machine create -d virtualbox build
+```
+- Step 3: Stop docker inside machine has created:
+```bazaar
+$ ./stopdocker.sh
+```
+- Step 4: Copy new file build to machine and start:
+```bazaar
+$ ./startdocker.sh
+```
+
 Legal
 =====
 

@@ -155,7 +155,7 @@ func (daemon *Daemon) create(params types.ContainerCreateConfig, managed bool) (
 	}
 
 	// Set RWLayer for container after mount labels have been set
-	rwLayer, err := daemon.imageService.CreateLayer(container, setupInitLayer(daemon.idMapping))
+	rwLayer, err := daemon.imageService.CreateLayer(params.Config.Path, container, setupInitLayer(daemon.idMapping))
 	if err != nil {
 		return nil, errdefs.System(err)
 	}

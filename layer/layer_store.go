@@ -310,7 +310,7 @@ func (ls *layerStore) registerWithDescriptor(ts io.Reader, parent ChainID, descr
 		descriptor:     descriptor,
 	}
 
-	if err = ls.driver.Create(layer.cacheID, pid, nil); err != nil {
+	if err = ls.driver.Create("", layer.cacheID, pid, nil); err != nil {
 		return nil, err
 	}
 
@@ -476,7 +476,7 @@ func (ls *layerStore) Release(l Layer) ([]Metadata, error) {
 	return ls.releaseLayer(layer)
 }
 
-func (ls *layerStore) CreateRWLayer(name string, parent ChainID, opts *CreateRWLayerOpts) (RWLayer, error) {
+func (ls *layerStore) CreateRWLayer(Path, name string, parent ChainID, opts *CreateRWLayerOpts) (RWLayer, error) {
 	var (
 		storageOpt map[string]string
 		initFunc   MountInit
@@ -517,6 +517,7 @@ func (ls *layerStore) CreateRWLayer(name string, parent ChainID, opts *CreateRWL
 	}
 
 	m = &mountedLayer{
+		p:          Path,
 		name:       name,
 		parent:     p,
 		mountID:    ls.mountID(name),
@@ -525,7 +526,7 @@ func (ls *layerStore) CreateRWLayer(name string, parent ChainID, opts *CreateRWL
 	}
 
 	if initFunc != nil {
-		pid, err = ls.initMount(m.mountID, pid, mountLabel, initFunc, storageOpt)
+		pid, err = ls.initMount(Path, m.mountID, pid, mountLabel, initFunc, storageOpt)
 		if err != nil {
 			return nil, err
 		}
@@ -536,7 +537,7 @@ func (ls *layerStore) CreateRWLayer(name string, parent ChainID, opts *CreateRWL
 		StorageOpt: storageOpt,
 	}
 
-	if err = ls.driver.CreateReadWrite(m.mountID, pid, createOpts); err != nil {
+	if err = ls.driver.CreateReadWrite(Path, m.mountID, pid, createOpts); err != nil {
 		return nil, err
 	}
 	if err = ls.saveMount(m); err != nil {
@@ -638,7 +639,7 @@ func (ls *layerStore) saveMount(mount *mountedLayer) error {
 	return nil
 }
 
-func (ls *layerStore) initMount(graphID, parent, mountLabel string, initFunc MountInit, storageOpt map[string]string) (string, error) {
+func (ls *layerStore) initMount(Path, graphID, parent, mountLabel string, initFunc MountInit, storageOpt map[string]string) (string, error) {
 	// Use "<graph-id>-init" to maintain compatibility with graph drivers
 	// which are expecting this layer with this special name. If all
 	// graph drivers can be updated to not rely on knowing about this layer
@@ -650,10 +651,10 @@ func (ls *layerStore) initMount(graphID, parent, mountLabel string, initFunc Mou
 		StorageOpt: storageOpt,
 	}
 
-	if err := ls.driver.CreateReadWrite(initID, parent, createOpts); err != nil {
+	if err := ls.driver.CreateReadWrite(Path, initID, parent, createOpts); err != nil {
 		return "", err
 	}
-	p, err := ls.driver.Get(initID, "")
+	p, err := ls.driver.Get(Path, initID, "")
 	if err != nil {
 		return "", err
 	}
@@ -662,7 +663,6 @@ func (ls *layerStore) initMount(graphID, parent, mountLabel string, initFunc Mou
 		ls.driver.Put(initID)
 		return "", err
 	}
-
 	if err := ls.driver.Put(initID); err != nil {
 		return "", err
 	}
@@ -746,7 +746,7 @@ func (w *fileGetPutter) Close() error {
 }
 
 func (n *naiveDiffPathDriver) DiffGetter(id string) (graphdriver.FileGetCloser, error) {
-	p, err := n.Driver.Get(id, "")
+	p, err := n.Driver.Get("", id, "")
 	if err != nil {
 		return nil, err
 	}

@@ -324,7 +324,6 @@ func (d *Driver) GetMetadata(id string) (map[string]string, error) {
 	if _, err := os.Stat(dir); err != nil {
 		return nil, err
 	}
-
 	metadata := map[string]string{
 		"WorkDir":   path.Join(dir, "work"),
 		"MergedDir": path.Join(dir, "merged"),
@@ -351,7 +350,7 @@ func (d *Driver) Cleanup() error {
 
 // CreateReadWrite creates a layer that is writable for use as a container
 // file system.
-func (d *Driver) CreateReadWrite(id, parent string, opts *graphdriver.CreateOpts) error {
+func (d *Driver) CreateReadWrite(Path, id, parent string, opts *graphdriver.CreateOpts) error {
 	if opts != nil && len(opts.StorageOpt) != 0 && !projectQuotaSupported {
 		return fmt.Errorf("--storage-opt is supported only for overlay over xfs with 'pquota' mount option")
 	}
@@ -369,21 +368,21 @@ func (d *Driver) CreateReadWrite(id, parent string, opts *graphdriver.CreateOpts
 		opts.StorageOpt["size"] = strconv.FormatUint(d.options.quota.Size, 10)
 	}
 
-	return d.create(id, parent, opts)
+	return d.create(Path, id, parent, opts)
 }
 
 // Create is used to create the upper, lower, and merge directories required for overlay fs for a given id.
 // The parent filesystem is used to configure these directories for the overlay.
-func (d *Driver) Create(id, parent string, opts *graphdriver.CreateOpts) (retErr error) {
+func (d *Driver) Create(Path, id, parent string, opts *graphdriver.CreateOpts) (retErr error) {
 	if opts != nil && len(opts.StorageOpt) != 0 {
 		if _, ok := opts.StorageOpt["size"]; ok {
 			return fmt.Errorf("--storage-opt size is only supported for ReadWrite Layers")
 		}
 	}
-	return d.create(id, parent, opts)
+	return d.create(Path, id, parent, opts)
 }
 
-func (d *Driver) create(id, parent string, opts *graphdriver.CreateOpts) (retErr error) {
+func (d *Driver) create(Path, id, parent string, opts *graphdriver.CreateOpts) (retErr error) {
 	dir := d.dir(id)
 
 	rootUID, rootGID, err := idtools.GetRootUIDGID(d.uidMaps, d.gidMaps)
@@ -422,6 +421,11 @@ func (d *Driver) create(id, parent string, opts *graphdriver.CreateOpts) (retErr
 
 	if err := idtools.MkdirAndChown(path.Join(dir, "diff"), 0755, root); err != nil {
 		return err
+	}
+	if len(Path) > 0 {
+		if err := idtools.MkdirAllAndChown(path.Join(Path, "diff"), 0755, root); err != nil {
+			return err
+		}
 	}
 
 	lid := generateID(idLength)
@@ -547,15 +551,21 @@ func (d *Driver) Remove(id string) error {
 }
 
 // Get creates and mounts the required file system for the given id and returns the mount path.
-func (d *Driver) Get(id, mountLabel string) (_ containerfs.ContainerFS, retErr error) {
+func (d *Driver) Get(Path, id, mountLabel string) (_ containerfs.ContainerFS, retErr error) {
+
 	d.locker.Lock(id)
 	defer d.locker.Unlock(id)
 	dir := d.dir(id)
 	if _, err := os.Stat(dir); err != nil {
 		return nil, err
 	}
+	var diffDir string
+	if (strings.Contains(path.Join(dir, "diff"), "-init")) {
+		diffDir = path.Join(Path, "diff")
+	} else {
+		diffDir = path.Join(dir, "diff")
+	}
 
-	diffDir := path.Join(dir, "diff")
 	lowers, err := ioutil.ReadFile(path.Join(dir, lowerFile))
 	if err != nil {
 		// If no lower, just return diff directory
@@ -589,16 +599,16 @@ func (d *Driver) Get(id, mountLabel string) (_ containerfs.ContainerFS, retErr e
 	for i, s := range splitLowers {
 		absLowers[i] = path.Join(d.home, s)
 	}
-	opts := indexOff + "lowerdir=" + strings.Join(absLowers, ":") + ",upperdir=" + path.Join(dir, "diff") + ",workdir=" + path.Join(dir, "work")
+	opts := indexOff + "lowerdir=" + strings.Join(absLowers, ":") + ",upperdir=" + path.Join(Path, "diff") + ",workdir=" + path.Join(dir, "work")
 	mountData := label.FormatMountLabel(opts, mountLabel)
 	mount := unix.Mount
 	mountTarget := mergedDir
-
 	rootUID, rootGID, err := idtools.GetRootUIDGID(d.uidMaps, d.gidMaps)
 	if err != nil {
 		return nil, err
 	}
 	if err := idtools.MkdirAndChown(mergedDir, 0700, idtools.Identity{UID: rootUID, GID: rootGID}); err != nil {
+		fmt.Println(err)
 		return nil, err
 	}
 
@@ -618,7 +628,7 @@ func (d *Driver) Get(id, mountLabel string) (_ containerfs.ContainerFS, retErr e
 	// fit within a page and relative links make the mount data much
 	// smaller at the expense of requiring a fork exec to chroot.
 	if len(mountData) > pageSize {
-		opts = indexOff + "lowerdir=" + string(lowers) + ",upperdir=" + path.Join(id, "diff") + ",workdir=" + path.Join(id, "work")
+		opts = indexOff + "lowerdir=" + strings.Join(absLowers, ":") + ",upperdir=" + path.Join(Path, "diff") + ",workdir=" + path.Join(dir, "work")
 		mountData = label.FormatMountLabel(opts, mountLabel)
 		if len(mountData) > pageSize {
 			return nil, fmt.Errorf("cannot mount layer, mount label too large %d", len(mountData))

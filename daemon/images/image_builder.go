@@ -55,7 +55,7 @@ func (l *roLayer) NewRWLayer() (builder.RWLayer, error) {
 	}
 
 	mountID := stringid.GenerateRandomID()
-	newLayer, err := l.layerStore.CreateRWLayer(mountID, chainID, nil)
+	newLayer, err := l.layerStore.CreateRWLayer("", mountID, chainID, nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create rwlayer")
 	}

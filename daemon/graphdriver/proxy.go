@@ -91,11 +91,11 @@ func (d *graphDriverProxy) Capabilities() Capabilities {
 	return d.caps
 }
 
-func (d *graphDriverProxy) CreateReadWrite(id, parent string, opts *CreateOpts) error {
+func (d *graphDriverProxy) CreateReadWrite(Path, id, parent string, opts *CreateOpts) error {
 	return d.create("GraphDriver.CreateReadWrite", id, parent, opts)
 }
 
-func (d *graphDriverProxy) Create(id, parent string, opts *CreateOpts) error {
+func (d *graphDriverProxy) Create(Path, id, parent string, opts *CreateOpts) error {
 	return d.create("GraphDriver.Create", id, parent, opts)
 }
 
@@ -130,7 +130,7 @@ func (d *graphDriverProxy) Remove(id string) error {
 	return nil
 }
 
-func (d *graphDriverProxy) Get(id, mountLabel string) (containerfs.ContainerFS, error) {
+func (d *graphDriverProxy) Get(Path, id, mountLabel string) (containerfs.ContainerFS, error) {
 	args := &graphDriverRequest{
 		ID:         id,
 		MountLabel: mountLabel,

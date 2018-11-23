@@ -112,7 +112,7 @@ func (i *ImageService) Children(id image.ID) []image.ID {
 // CreateLayer creates a filesystem layer for a container.
 // called from create.go
 // TODO: accept an opt struct instead of container?
-func (i *ImageService) CreateLayer(container *container.Container, initFunc layer.MountInit) (layer.RWLayer, error) {
+func (i *ImageService) CreateLayer(Path string, container *container.Container, initFunc layer.MountInit) (layer.RWLayer, error) {
 	var layerID layer.ChainID
 	if container.ImageID != "" {
 		img, err := i.imageStore.Get(container.ImageID)
@@ -121,7 +121,6 @@ func (i *ImageService) CreateLayer(container *container.Container, initFunc laye
 		}
 		layerID = img.RootFS.ChainID()
 	}
-
 	rwLayerOpts := &layer.CreateRWLayerOpts{
 		MountLabel: container.MountLabel,
 		InitFunc:   initFunc,
@@ -130,7 +129,7 @@ func (i *ImageService) CreateLayer(container *container.Container, initFunc laye
 
 	// Indexing by OS is safe here as validation of OS has already been performed in create() (the only
 	// caller), and guaranteed non-nil
-	return i.layerStores[container.OS].CreateRWLayer(container.ID, layerID, rwLayerOpts)
+	return i.layerStores[container.OS].CreateRWLayer(Path, container.ID, layerID, rwLayerOpts)
 }
 
 // GetLayerByID returns a layer by ID and operating system

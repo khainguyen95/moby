@@ -2,6 +2,7 @@ package snapshot
 
 import (
 	"context"
+	"fmt"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -13,7 +14,7 @@ import (
 	"github.com/docker/docker/layer"
 	"github.com/moby/buildkit/identity"
 	"github.com/moby/buildkit/snapshot"
-	digest "github.com/opencontainers/go-digest"
+	"github.com/opencontainers/go-digest"
 	"github.com/pkg/errors"
 	bolt "go.etcd.io/bbolt"
 )
@@ -87,7 +88,7 @@ func (s *snapshotter) Prepare(ctx context.Context, key, parent string, opts ...s
 			parent, _ = s.getGraphDriverID(parent)
 		}
 	}
-	if err := s.opt.GraphDriver.Create(key, parent, nil); err != nil {
+	if err := s.opt.GraphDriver.Create("", key, parent, nil); err != nil {
 		return err
 	}
 	return s.db.Update(func(tx *bolt.Tx) error {
@@ -245,7 +246,7 @@ func (s *snapshotter) Mounts(ctx context.Context, key string) (snapshot.Mountabl
 		var rwlayer layer.RWLayer
 		return &mountable{
 			acquire: func() ([]mount.Mount, error) {
-				rwlayer, err = s.opt.LayerStore.CreateRWLayer(id, l.ChainID(), nil)
+				rwlayer, err = s.opt.LayerStore.CreateRWLayer("", id, l.ChainID(), nil)
 				if err != nil {
 					return nil, err
 				}
@@ -270,7 +271,7 @@ func (s *snapshotter) Mounts(ctx context.Context, key string) (snapshot.Mountabl
 
 	return &mountable{
 		acquire: func() ([]mount.Mount, error) {
-			rootfs, err := s.opt.GraphDriver.Get(id, "")
+			rootfs, err := s.opt.GraphDriver.Get("", id, "")
 			if err != nil {
 				return nil, err
 			}

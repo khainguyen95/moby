@@ -8,6 +8,7 @@ import (
 )
 
 type mountedLayer struct {
+	p          string
 	name       string
 	mountID    string
 	initID     string
@@ -90,7 +91,7 @@ type referencedRWLayer struct {
 }
 
 func (rl *referencedRWLayer) Mount(mountLabel string) (containerfs.ContainerFS, error) {
-	return rl.layerStore.driver.Get(rl.mountedLayer.mountID, mountLabel)
+	return rl.layerStore.driver.Get(rl.p, rl.mountedLayer.mountID, mountLabel)
 }
 
 // Unmount decrements the activity count and unmounts the underlying layer

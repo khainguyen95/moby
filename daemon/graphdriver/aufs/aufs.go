@@ -232,13 +232,13 @@ func (a *Driver) Exists(id string) bool {
 
 // CreateReadWrite creates a layer that is writable for use as a container
 // file system.
-func (a *Driver) CreateReadWrite(id, parent string, opts *graphdriver.CreateOpts) error {
-	return a.Create(id, parent, opts)
+func (a *Driver) CreateReadWrite(Path, id, parent string, opts *graphdriver.CreateOpts) error {
+	return a.Create("",id, parent, opts)
 }
 
 // Create three folders for each id
 // mnt, layers, and diff
-func (a *Driver) Create(id, parent string, opts *graphdriver.CreateOpts) error {
+func (a *Driver) Create(Path, id, parent string, opts *graphdriver.CreateOpts) error {
 
 	if opts != nil && len(opts.StorageOpt) != 0 {
 		return fmt.Errorf("--storage-opt is not supported for aufs")
@@ -384,7 +384,7 @@ func atomicRemove(source string) error {
 
 // Get returns the rootfs path for the id.
 // This will mount the dir at its given path
-func (a *Driver) Get(id, mountLabel string) (containerfs.ContainerFS, error) {
+func (a *Driver) Get(Path, id, mountLabel string) (containerfs.ContainerFS, error) {
 	a.locker.Lock(id)
 	defer a.locker.Unlock(id)
 	parents, err := a.getParentLayerPaths(id)

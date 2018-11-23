@@ -167,9 +167,9 @@ func lookupZfsDataset(rootdir string) (string, error) {
 
 // Driver holds information about the driver, such as zfs dataset, options and cache.
 type Driver struct {
-	dataset          *zfs.Dataset
-	options          zfsOptions
-	sync.Mutex       // protects filesystem cache against concurrent access
+	dataset *zfs.Dataset
+	options zfsOptions
+	sync.Mutex // protects filesystem cache against concurrent access
 	filesystemsCache map[string]bool
 	uidMaps          []idtools.IDMap
 	gidMaps          []idtools.IDMap
@@ -259,12 +259,12 @@ func (d *Driver) mountPath(id string) string {
 
 // CreateReadWrite creates a layer that is writable for use as a container
 // file system.
-func (d *Driver) CreateReadWrite(id, parent string, opts *graphdriver.CreateOpts) error {
-	return d.Create(id, parent, opts)
+func (d *Driver) CreateReadWrite(Path, id, parent string, opts *graphdriver.CreateOpts) error {
+	return d.Create("", id, parent, opts)
 }
 
 // Create prepares the dataset and filesystem for the ZFS driver for the given id under the parent.
-func (d *Driver) Create(id, parent string, opts *graphdriver.CreateOpts) error {
+func (d *Driver) Create(Path, id, parent string, opts *graphdriver.CreateOpts) error {
 	var storageOpt map[string]string
 	if opts != nil {
 		storageOpt = opts.StorageOpt
@@ -357,7 +357,7 @@ func (d *Driver) Remove(id string) error {
 }
 
 // Get returns the mountpoint for the given id after creating the target directories if necessary.
-func (d *Driver) Get(id, mountLabel string) (_ containerfs.ContainerFS, retErr error) {
+func (d *Driver) Get(Path,id, mountLabel string) (_ containerfs.ContainerFS, retErr error) {
 	mountpoint := d.mountPath(id)
 	if count := d.ctr.Increment(mountpoint); count > 1 {
 		return containerfs.NewLocalContainerFS(mountpoint), nil
